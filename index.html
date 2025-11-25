@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gifthub Weather Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- App JS -->
+  <script type="module" src="app.js" defer></script>
+</head>
+<body>
+  <header class="top-bar">
+    <h1>Gifthub Weather Dashboard</h1>
+    <p class="subtitle">Data dari ESP32 → Firebase</p>
+  </header>
+
+  <main class="container">
+    <!-- TAB UTAMA -->
+    <div class="tab-group">
+      <button id="tab-realtime" class="tab-btn active">Dashboard Realtime</button>
+      <button id="tab-recap" class="tab-btn">Rekap Data</button>
+    </div>
+
+    <!-- REALTIME -->
+    <section id="section-realtime" class="section active">
+      <div class="status-banner" id="status-banner">
+        Menghubungkan ke Firebase...
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <h3>Kecepatan Angin</h3>
+          <p class="value" id="card-wind">-</p>
+          <span>km/h</span>
+        </div>
+        <div class="card">
+          <h3>Curah Hujan Harian</h3>
+          <p class="value" id="card-rain">-</p>
+          <span>mm</span>
+        </div>
+        <div class="card">
+          <h3>Cahaya</h3>
+          <p class="value" id="card-lux">-</p>
+          <span>lux</span>
+        </div>
+        <div class="card">
+          <h3>Waktu</h3>
+          <p class="value" id="card-time">-</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Tren 24 Jam Terakhir</h2>
+      <div class="chart-wrapper">
+        anvas id="chart-realtime"></canvas>
+      </div>
+    </section>
+
+    <!-- REKAP -->
+    <section id="section-recap" class="section">
+      <h2 class="section-title">Rekap Data (Histori)</h2>
+
+      <div class="tab-group small">
+        <button class="tab-btn sub active" data-agg="minute">Per Menit</button>
+        <button class="tab-btn sub" data-agg="hour">Per Jam</button>
+        <button class="tab-btn sub" data-agg="day">Per Hari</button>
+        <button class="tab-btn sub" data-agg="month">Per Bulan</button>
+      </div>
+
+      <div class="toolbar">
+        <span id="rekap-info">Memuat data...</span>
+        <button id="btn-download" class="btn-download">Download CSV</button>
+      </div>
+
+      <div class="chart-wrapper">
+        anvas id="chart-rekap"></canvas>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Kecepatan Angin (km/h)</th>
+              <th>Curah Hujan (mm)</th>
+              <th>Cahaya (lux)</th>
+            </tr>
+          </thead>
+          <tbody id="rekap-tbody">
+            <!-- Diisi JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
