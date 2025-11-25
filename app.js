@@ -7,7 +7,7 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 
-// KONFIGURASI FIREBASE PUNYAMU
+// Firebase proyekmu
 const firebaseConfig = {
   apiKey: "AIzaSyD-eCZun9Chghk2z0rdPrEuIKkMojrM5g0",
   authDomain: "monitoring-ver-j.firebaseapp.com",
@@ -43,7 +43,7 @@ let realtimeChart;
 let rekapChart;
 let historiData = [];
 
-// TAB UTAMA
+// Tab utama
 tabRealtime.addEventListener("click", () => {
   tabRealtime.classList.add("active");
   tabRecap.classList.remove("active");
@@ -58,7 +58,7 @@ tabRecap.addEventListener("click", () => {
   sectionRealtime.classList.remove("active");
 });
 
-// SUB TAB REKAP
+// Sub tab rekap
 subTabButtons.forEach(btn => {
   btn.addEventListener("click", () => {
     subTabButtons.forEach(b => b.classList.remove("active"));
@@ -68,7 +68,7 @@ subTabButtons.forEach(btn => {
   });
 });
 
-// REALTIME
+// Realtime: /weather/keadaan_sekarang
 const realtimeRef = ref(db, "/weather/keadaan_sekarang");
 onValue(realtimeRef, snap => {
   const val = snap.val();
@@ -88,7 +88,7 @@ onValue(realtimeRef, snap => {
   pushRealtimeChart(timeStr, wind, rain, lux);
 });
 
-// HISTORI
+// Histori: /weather/histori
 const histRef = ref(db, "/weather/histori");
 onValue(histRef, snap => {
   const val = snap.val();
@@ -114,7 +114,7 @@ onValue(histRef, snap => {
   updateRekapView();
 });
 
-// UTIL WAKTU
+// Util waktu
 function parseToDate(str) {
   const [dp, tp] = str.split(" ");
   if (!dp || !tp) return null;
@@ -122,14 +122,16 @@ function parseToDate(str) {
   const [hh, mm, ss] = tp.split(":").map(Number);
   return new Date(y, m - 1, d, hh, mm, ss);
 }
-
 function pad2(n) {
   return n.toString().padStart(2, "0");
 }
 
-// REALTIME CHART
+// Chart realtime
 function initRealtimeChart() {
-  const ctx = document.getElementById("chart-realtime").getContext("2d");
+  const canvas = document.getElementById("chart-realtime");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
   realtimeChart = new Chart(ctx, {
     type: "line",
     data: {
@@ -192,25 +194,22 @@ function pushRealtimeChart(label, wind, rain, lux) {
   realtimeChart.update("none");
 }
 
-// AGREGASI HISTORI
+// Agregasi histori
 function aggregateData(data, mode) {
   const map = new Map();
+
   data.forEach(item => {
     const d = item.time;
     let key, label;
+
     if (mode === "minute") {
-      key =
-        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
-        `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
       label = key;
     } else if (mode === "hour") {
-      key =
-        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
-        `${pad2(d.getHours())}`;
+      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}`;
       label = key + ":00";
     } else if (mode === "day") {
-      key =
-        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
       label = key;
     } else {
       key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
@@ -240,11 +239,14 @@ function aggregateData(data, mode) {
   if (mode === "hour") labelName = "Per Jam";
   else if (mode === "day") labelName = "Per Hari";
   else if (mode === "month") labelName = "Per Bulan";
+
   return { buckets, labelName };
 }
 
-// UPDATE REKAP
+// Update rekap (chart + tabel)
 function updateRekapView() {
+  if (!rekapInfo || !rekapTbody) return;
+
   if (!historiData.length) {
     rekapInfo.textContent = "Belum ada data histori.";
     rekapTbody.innerHTML = "";
@@ -272,8 +274,11 @@ function updateRekapView() {
   const rainData = buckets.map(b => b.rain);
   const luxData = buckets.map(b => b.lux);
 
+  const canvas = document.getElementById("chart-rekap");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
   if (rekapChart) rekapChart.destroy();
-  const ctx = document.getElementById("chart-rekap").getContext("2d");
   const type = currentAgg === "month" ? "bar" : "line";
 
   rekapChart = new Chart(ctx, {
@@ -327,7 +332,7 @@ function updateRekapView() {
   });
 }
 
-// DOWNLOAD CSV
+// Download CSV
 btnDownload.addEventListener("click", () => {
   if (!historiData.length) return;
   const { buckets } = aggregateData(historiData, currentAgg);
@@ -346,7 +351,7 @@ btnDownload.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-// INIT
+// Init
 window.addEventListener("DOMContentLoaded", () => {
   initRealtimeChart();
 });
