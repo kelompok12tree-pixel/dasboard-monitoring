@@ -7,7 +7,7 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 
-// KONFIGURASI FIREBASE MILIKMU
+// KONFIGURASI FIREBASE PUNYAMU
 const firebaseConfig = {
   apiKey: "AIzaSyD-eCZun9Chghk2z0rdPrEuIKkMojrM5g0",
   authDomain: "monitoring-ver-j.firebaseapp.com",
@@ -21,7 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ELEMENT DOM
+// DOM
 const tabRealtime = document.getElementById("tab-realtime");
 const tabRecap = document.getElementById("tab-recap");
 const sectionRealtime = document.getElementById("section-realtime");
@@ -43,7 +43,7 @@ let realtimeChart;
 let rekapChart;
 let historiData = [];
 
-// SWITCH TAB UTAMA
+// TAB UTAMA
 tabRealtime.addEventListener("click", () => {
   tabRealtime.classList.add("active");
   tabRecap.classList.remove("active");
@@ -68,7 +68,7 @@ subTabButtons.forEach(btn => {
   });
 });
 
-// REALTIME (keadaan_sekarang)
+// REALTIME
 const realtimeRef = ref(db, "/weather/keadaan_sekarang");
 onValue(realtimeRef, snap => {
   const val = snap.val();
@@ -127,7 +127,7 @@ function pad2(n) {
   return n.toString().padStart(2, "0");
 }
 
-// CHART REALTIME (24 titik)
+// REALTIME CHART
 function initRealtimeChart() {
   const ctx = document.getElementById("chart-realtime").getContext("2d");
   realtimeChart = new Chart(ctx, {
@@ -149,8 +149,7 @@ function initRealtimeChart() {
           borderColor: "#38bdf8",
           tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          yAxisID: "y1"
+          pointRadius: 0
         },
         {
           label: "Cahaya (lux)",
@@ -158,8 +157,7 @@ function initRealtimeChart() {
           borderColor: "#a855f7",
           tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          yAxisID: "y2"
+          pointRadius: 0
         }
       ]
     },
@@ -167,15 +165,11 @@ function initRealtimeChart() {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: {
-          ticks: { color: "#9ca3af", maxRotation: 0 }
-        },
+        x: { ticks: { color: "#9ca3af", maxRotation: 0 } },
         y: {
           ticks: { color: "#9ca3af" },
           grid: { color: "rgba(156,163,175,0.2)" }
-        },
-        y1: { position: "right", display: false },
-        y2: { position: "right", display: false }
+        }
       },
       plugins: {
         legend: { labels: { color: "#e5e7eb", boxWidth: 10 } }
@@ -198,25 +192,31 @@ function pushRealtimeChart(label, wind, rain, lux) {
   realtimeChart.update("none");
 }
 
-// AGREGASI PER MENIT/JAM/HARI/BULAN
+// AGREGASI HISTORI
 function aggregateData(data, mode) {
   const map = new Map();
   data.forEach(item => {
     const d = item.time;
     let key, label;
     if (mode === "minute") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      key =
+        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+        `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
       label = key;
     } else if (mode === "hour") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}`;
+      key =
+        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+        `${pad2(d.getHours())}`;
       label = key + ":00";
     } else if (mode === "day") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      key =
+        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
       label = key;
     } else {
       key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
       label = key;
     }
+
     if (!map.has(key)) {
       map.set(key, { label, count: 0, windSum: 0, rainSum: 0, luxSum: 0 });
     }
@@ -243,7 +243,7 @@ function aggregateData(data, mode) {
   return { buckets, labelName };
 }
 
-// UPDATE REKAP (chart + tabel)
+// UPDATE REKAP
 function updateRekapView() {
   if (!historiData.length) {
     rekapInfo.textContent = "Belum ada data histori.";
@@ -251,6 +251,7 @@ function updateRekapView() {
     if (rekapChart) rekapChart.destroy();
     return;
   }
+
   const { buckets, labelName } = aggregateData(historiData, currentAgg);
   rekapInfo.textContent = `Mode: ${labelName} | Total grup: ${buckets.length}`;
 
