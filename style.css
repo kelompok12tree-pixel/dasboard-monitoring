@@ -1,11 +1,13 @@
 :root {
-  --bg: #060818;
-  --bg-soft: #0f172a;
-  --card: #111827;
-  --accent: #22c55e;
-  --accent-soft: #16a34a;
+  /* Palet Cuaca Indonesia - Tema Senja */
+  --bg: #001871;
+  --bg-soft: #0031a1;
+  --card: #0240a0;
+  --accent: #048780;
+  --accent-soft: #037a6e;
   --text: #e5e7eb;
-  --muted: #9ca3af;
+  --muted: #a8b4c2;
+  --warning: #827A04;
   --danger: #f97373;
   --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -18,20 +20,22 @@
 
 body {
   font-family: var(--font);
-  background: #060818;
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
 
 .top-bar {
   padding: 16px 24px;
-  background: #020617;
-  border-bottom: 1px solid #1f2937;
+  background: linear-gradient(135deg, #001871 0%, #0031a1 100%);
+  border-bottom: 1px solid #0240a0;
+  box-shadow: 0 2px 8px rgba(0, 24, 113, 0.3);
 }
 
 .top-bar h1 {
   font-size: 20px;
   font-weight: 600;
+  color: #e5e7eb;
 }
 
 .subtitle {
@@ -59,8 +63,8 @@ body {
 .tab-btn {
   padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid #1f2937;
-  background: #020617;
+  border: 1px solid #0240a0;
+  background: var(--bg-soft);
   color: var(--muted);
   font-size: 13px;
   cursor: pointer;
@@ -70,7 +74,7 @@ body {
 .tab-btn.active {
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: #f9fafb;
+  color: #e5e7eb;
 }
 
 .tab-btn.sub {
@@ -90,9 +94,10 @@ body {
   margin-bottom: 16px;
   padding: 10px 16px;
   border-radius: 8px;
-  background: #064e3b;
-  color: #bbf7d0;
+  background: linear-gradient(90deg, #048780, #037a6e);
+  color: #e5e7eb;
   font-size: 13px;
+  border: 1px solid #048780;
 }
 
 .cards {
@@ -106,7 +111,8 @@ body {
   background: var(--card);
   border-radius: 10px;
   padding: 12px 14px;
-  border: 1px solid #1f2937;
+  border: 1px solid #0240a0;
+  box-shadow: 0 2px 6px rgba(0, 24, 113, 0.1);
 }
 
 .card h3 {
@@ -128,21 +134,23 @@ body {
 .section-title {
   font-size: 15px;
   margin-bottom: 10px;
+  color: var(--text);
 }
 
 .chart-wrapper {
   background: var(--card);
   border-radius: 10px;
   padding: 14px;
-  border: 1px solid #1f2937;
+  border: 1px solid #0240a0;
   margin-bottom: 20px;
   height: 280px;
+  box-shadow: 0 4px 12px rgba(0, 24, 113, 0.2);
 }
 
 .table-wrapper {
   background: var(--card);
   border-radius: 10px;
-  border: 1px solid #1f2937;
+  border: 1px solid #0240a0;
   overflow: auto;
 }
 
@@ -150,20 +158,21 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  color: var(--text);
 }
 
 thead {
-  background: #020617;
+  background: var(--bg-soft);
 }
 
 th, td {
   padding: 8px 10px;
   text-align: left;
-  border-bottom: 1px solid #1f2937;
+  border-bottom: 1px solid #0240a0;
 }
 
 tbody tr:nth-child(even) {
-  background: #020617;
+  background: rgba(2, 64, 160, 0.2);
 }
 
 .toolbar {
@@ -179,14 +188,14 @@ tbody tr:nth-child(even) {
   padding: 6px 12px;
   border-radius: 999px;
   border: none;
-  background: #1d4ed8;
+  background: #827A04;
   color: white;
   font-size: 12px;
   cursor: pointer;
 }
 
 .btn-download:hover {
-  background: #2563eb;
+  background: #6a6410;
 }
 
 @media (max-width: 600px) {
