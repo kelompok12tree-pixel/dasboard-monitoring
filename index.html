@@ -4,72 +4,158 @@
   <meta charset="UTF-8" />
   <title>Monitoring Potensi Energi Terbarukan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Adapter untuk time scale (date-fns) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script> <!-- [web:297] -->
+
+  <!-- Zoom plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script> <!-- [web:276][web:283] -->
+
   <script type="module" src="app.js" defer></script>
 </head>
+
 <body>
   <header class="top-bar">
     <h1>Monitoring Potensi Energi Terbarukan</h1>
-    <p class="subtitle">Data Cuaca untuk Potensi Energi - ESP32 → Firebase</p>
+    <p class="subtitle">Dashboard Analisis Data Cuaca - ESP32 → Firebase</p>
   </header>
 
   <main class="container">
     <div class="tab-group">
-      <button id="tab-realtime" class="tab-btn active">Dashboard Realtime</button>
-      <button id="tab-recap" class="tab-btn">Rekap Data</button>
+      <button id="tab-realtime" class="tab-btn active">Dashboard Live</button>
+      <button id="tab-recap" class="tab-btn">Analisis Historis</button>
     </div>
 
+    <!-- ================== REALTIME ================== -->
     <section id="section-realtime" class="section active">
-      <div class="status-banner" id="status-banner">
-        Menghubungkan ke Firebase...
-      </div>
+      <div class="status-banner" id="status-banner">Menghubungkan ke Firebase...</div>
 
       <div class="cards">
         <div class="card">
           <h3>Kecepatan Angin</h3>
-          <p class="value" id="card-wind">-</p>
-          <span>km/h</span>
+          <p class="value"><span id="card-wind">-</span> <small>km/h</small></p>
         </div>
         <div class="card">
           <h3>Curah Hujan Harian</h3>
-          <p class="value" id="card-rain">-</p>
-          <span>mm</span>
+          <p class="value"><span id="card-rain">-</span> <small>mm</small></p>
         </div>
         <div class="card">
-          <h3>Cahaya</h3>
-          <p class="value" id="card-lux">-</p>
-          <span>lux</span>
+          <h3>Intensitas Cahaya</h3>
+          <p class="value"><span id="card-lux">-</span> <small>lux</small></p>
         </div>
         <div class="card">
-          <h3>Waktu</h3>
-          <p class="value" id="card-time">-</p>
+          <h3>Timestamp</h3>
+          <p class="value"><span id="card-time">-</span></p>
         </div>
       </div>
 
-      <h2 class="section-title">Tren 24 Jam Terakhir</h2>
-      <div class="chart-wrapper">
-        <canvas id="chart-realtime"></canvas>
+      <h2 class="section-title">Grafik Live (Zoom + Tap Presisi)</h2>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Angin (km/h)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="windLive">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="windLive">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-wind-live"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Hujan Harian (mm)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="rainLive">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="rainLive">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-rain-live"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Cahaya (lux)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="luxLive">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="luxLive">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-lux-live"></canvas></div>
+        </div>
       </div>
     </section>
 
+    <!-- ================== HISTORI ================== -->
     <section id="section-recap" class="section">
-      <h2 class="section-title">Rekap Data (Histori)</h2>
+      <h2 class="section-title">Analisis Historis</h2>
 
-      <div class="tab-group small">
-        <button class="tab-btn sub active" data-agg="minute">Per Menit</button>
-        <button class="tab-btn sub" data-agg="hour">Per Jam</button>
-        <button class="tab-btn sub" data-agg="day">Per Hari</button>
-        <button class="tab-btn sub" data-agg="month">Per Bulan</button>
+      <!-- Filter tanggal -->
+      <div class="filter-bar">
+        <div class="filter-left">
+          <label>Mulai</label>
+          <input id="date-start" type="date">
+          <span class="arrow">→</span>
+          <label>Sampai</label>
+          <input id="date-end" type="date">
+          <button id="btn-filter" class="btn-download">Filter</button>
+          <button id="btn-clear" class="btn-download ghost">Reset</button>
+        </div>
+
+        <div class="filter-right">
+          <button class="tab-btn sub active" data-agg="minute">Per Menit</button>
+          <button class="tab-btn sub" data-agg="hour">Per Jam</button>
+          <button class="tab-btn sub" data-agg="day">Per Hari</button>
+          <button class="tab-btn sub" data-agg="month">Per Bulan</button>
+        </div>
       </div>
 
       <div class="toolbar">
         <span id="rekap-info">Memuat data...</span>
-        <button id="btn-download" class="btn-download">Download CSV</button>
+        <div class="btn-row">
+          <button id="btn-download" class="btn-download">CSV</button>
+        </div>
       </div>
 
-      <div class="chart-wrapper">
-        <canvas id="chart-rekap"></canvas>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Angin (km/h)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="windRekap">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="windRekap">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-wind-rekap"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Hujan (mm)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="rainRekap">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="rainRekap">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-rain-rekap"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Cahaya (lux)</div>
+            <div class="btn-row">
+              <button class="btn-mini" data-reset="luxRekap">Reset Zoom</button>
+              <button class="btn-mini ghost" data-unpin="luxRekap">Unpin</button>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-lux-rekap"></canvas></div>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -77,8 +163,8 @@
           <thead>
             <tr>
               <th>Waktu</th>
-              <th>Kecepatan Angin (km/h)</th>
-              <th>Curah Hujan (mm)</th>
+              <th>Angin (km/h)</th>
+              <th>Hujan (mm)</th>
               <th>Cahaya (lux)</th>
             </tr>
           </thead>
