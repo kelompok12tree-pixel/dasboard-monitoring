@@ -36,17 +36,20 @@ const dateStartEl = document.getElementById("date-start");
 const dateEndEl   = document.getElementById("date-end");
 const btnFilter   = document.getElementById("btn-filter");
 const btnClear    = document.getElementById("btn-clear");
+const btnGotoStart = document.getElementById("btn-goto-start");
+const btnGotoEnd   = document.getElementById("btn-goto-end");
+const btnSlide     = document.getElementById("btn-slide");
 
 let currentAgg = "minute";
-let historiRaw = [];       // data asli dari firebase
-let historiFiltered = [];  // hasil filter tanggal
+let historiRaw = [];
+let historiFiltered = [];
 
 // charts
 let chartWindLive, chartRainLive, chartLuxLive;
 let chartWindRekap, chartRainRekap, chartLuxRekap;
 
-// pinned tooltip state (biar tap tidak numpuk)
-const pinned = new Map(); // chart -> {datasetIndex, index}
+// pinned tooltip state
+const pinned = new Map();
 
 // ===== Tabs
 tabRealtime.addEventListener("click", () => {
@@ -81,18 +84,15 @@ function parseToDate(str) {
   return new Date(y, m - 1, d, hh, mm, ss);
 }
 function pad2(n) { return n.toString().padStart(2, "0"); }
-function toYMD(d){
-  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-}
+function toYMD(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
-// ===== Plugin: klik/tap untuk "pin" tooltip (lebih presisi)
+// ===== Plugin: klik/tap untuk "pin" tooltip
 const pinTooltipPlugin = {
   id: "pinTooltip",
   afterEvent(chart, args) {
     const e = args.event;
     if (!e) return;
 
-    // klik/tap -> pin ke titik terdekat
     if (e.type === "click") {
       const points = chart.getElementsAtEventForMode(e.native, "nearest", { intersect: true }, true);
       if (points.length) {
@@ -106,7 +106,7 @@ const pinTooltipPlugin = {
   }
 };
 
-// ===== Chart factory (Time scale + zoom)
+// ===== Chart factory (time scale + zoom)
 function makeTimeChart(canvasId, title, color, unit, digits=2) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
@@ -116,7 +116,7 @@ function makeTimeChart(canvasId, title, color, unit, digits=2) {
     data: {
       datasets: [{
         label: title,
-        data: [], // isi: {x: Date, y: Number}
+        data: [], // {x: Date, y: number}
         borderColor: color,
         backgroundColor: color + "22",
         fill: true,
@@ -142,10 +142,10 @@ function makeTimeChart(canvasId, title, color, unit, digits=2) {
           }
         },
         zoom: {
-          pan: { enabled: true, mode: "x", modifierKey: "ctrl" }, // [web:283]
+          pan: { enabled: false, mode: "x", modifierKey: "ctrl" }, // OFF default [web:283]
           zoom: {
-            wheel: { enabled: true },  // [web:283]
-            pinch: { enabled: true },  // [web:283]
+            wheel: { enabled: true },
+            pinch: { enabled: true },
             drag:  { enabled: true },
             mode: "x"
           }
@@ -153,7 +153,7 @@ function makeTimeChart(canvasId, title, color, unit, digits=2) {
       },
       scales: {
         x: {
-          type: "time", // time axis biar waktu tidak mepet [web:273]
+          type: "time", // supaya waktu tidak numpuk [web:297]
           time: {
             displayFormats: {
               minute: "HH:mm",
@@ -190,73 +190,7 @@ function initCharts() {
   chartLuxLive  = makeTimeChart("chart-lux-live",  "Cahaya", "#fbbf24", "lux", 1);
 }
 
-// ===== Reset zoom + unpin buttons
-function initButtons() {
-  document.querySelectorAll("[data-reset]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.reset;
-      const map = {
-        windLive: chartWindLive, rainLive: chartRainLive, luxLive: chartLuxLive,
-        windRekap: chartWindRekap, rainRekap: chartRainRekap, luxRekap: chartLuxRekap
-      };
-      const ch = map[key];
-      if (ch && typeof ch.resetZoom === "function") ch.resetZoom();
-    });
-  });
-
-  document.querySelectorAll("[data-unpin]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.unpin;
-      const map = {
-        windLive: chartWindLive, rainLive: chartRainLive, luxLive: chartLuxLive,
-        windRekap: chartWindRekap, rainRekap: chartRainRekap, luxRekap: chartLuxRekap
-      };
-      const ch = map[key];
-      if (!ch) return;
-      pinned.delete(ch);
-      ch.setActiveElements([]);
-      ch.update();
-    });
-  });
-
-  btnFilter?.addEventListener("click", () => {
-    applyDateFilter();
-    updateRekapView();
-  });
-
-  btnClear?.addEventListener("click", () => {
-    dateStartEl.value = "";
-    dateEndEl.value = "";
-    historiFiltered = historiRaw.slice();
-    updateRekapView();
-  });
-}
-
-// ===== Realtime listener
-const realtimeRef = ref(db, "/weather/keadaan_sekarang");
-onValue(realtimeRef, snap => {
-  const val = snap.val();
-  if (!val) return;
-
-  const wind = Number(val.anemometer || 0);
-  const rain = Number(val.rain_gauge || 0);
-  const lux  = Number(val.sensor_cahaya || 0);
-  const timeStr = val.waktu || "-";
-  const dt = parseToDate(timeStr);
-  if (!dt) return;
-
-  cardWind.textContent = wind.toFixed(2);
-  cardRain.textContent = rain.toFixed(2);
-  cardLux.textContent  = lux.toFixed(1);
-  cardTime.textContent = timeStr;
-  statusBanner.textContent = "Connected - Last update: " + timeStr;
-
-  // max 120 titik (lebih halus dan tidak sesak)
-  pushXY(chartWindLive, dt, wind, 120);
-  pushXY(chartRainLive, dt, rain, 120);
-  pushXY(chartLuxLive,  dt, lux,  120);
-});
-
+// ===== Push live
 function pushXY(chart, xDate, yVal, maxPoints = 120) {
   if (!chart) return;
   const ds = chart.data.datasets[0];
@@ -264,40 +198,6 @@ function pushXY(chart, xDate, yVal, maxPoints = 120) {
   if (ds.data.length > maxPoints) ds.data.shift();
   chart.update("none");
 }
-
-// ===== Histori listener
-const histRef = ref(db, "/weather/histori");
-onValue(histRef, snap => {
-  const val = snap.val();
-  historiRaw = [];
-  if (val) {
-    Object.keys(val).forEach(k => {
-      const row = val[k];
-      if (!row || !row.waktu) return;
-      const d = parseToDate(row.waktu);
-      if (!d) return;
-      historiRaw.push({
-        time: d,
-        timeStr: row.waktu,
-        wind: Number(row.anemometer || 0),
-        rain: Number(row.rain_gauge || 0),
-        lux:  Number(row.sensor_cahaya || 0)
-      });
-    });
-    historiRaw.sort((a, b) => a.time - b.time);
-  }
-
-  // set default date input otomatis (biar gampang)
-  if (historiRaw.length) {
-    const first = historiRaw[0].time;
-    const last  = historiRaw[historiRaw.length - 1].time;
-    if (!dateStartEl.value) dateStartEl.value = toYMD(first);
-    if (!dateEndEl.value)   dateEndEl.value   = toYMD(last);
-  }
-
-  historiFiltered = historiRaw.slice();
-  updateRekapView();
-});
 
 // ===== Filter tanggal
 function applyDateFilter() {
@@ -321,23 +221,15 @@ function aggregateData(data, mode) {
     const d = item.time;
     let keyDate;
 
-    if (mode === "minute") {
-      keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
-    } else if (mode === "hour") {
-      keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0, 0);
-    } else if (mode === "day") {
-      keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
-    } else {
-      keyDate = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
-    }
+    if (mode === "minute") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
+    else if (mode === "hour") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0, 0);
+    else if (mode === "day") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+    else keyDate = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
 
     const key = keyDate.getTime();
     if (!map.has(key)) map.set(key, { x: keyDate, n:0, w:0, r:0, l:0 });
     const b = map.get(key);
-    b.n++;
-    b.w += item.wind;
-    b.r += item.rain;
-    b.l += item.lux;
+    b.n++; b.w += item.wind; b.r += item.rain; b.l += item.lux;
   });
 
   const buckets = Array.from(map.values()).map(b => ({
@@ -346,11 +238,54 @@ function aggregateData(data, mode) {
     rain: b.r / b.n,
     lux:  b.l / b.n
   }));
-
-  buckets.sort((a, b) => a.x - b.x);
+  buckets.sort((a,b)=>a.x-b.x);
   return buckets;
 }
 
+// ===== Fokus tanggal + tooltip angka (Ke Mulai/Ke Akhir)
+function findNearestIndex(points, targetDate){
+  if (!points.length) return -1;
+  let best = 0;
+  let bestDiff = Math.abs(points[0].x - targetDate);
+  for (let i = 1; i < points.length; i++){
+    const diff = Math.abs(points[i].x - targetDate);
+    if (diff < bestDiff){ bestDiff = diff; best = i; }
+  }
+  return best;
+}
+
+function focusDateOnCharts(targetDate){
+  applyDateFilter();
+  const points = aggregateData(historiFiltered, currentAgg);
+  if (!points.length) return;
+
+  const idx = findNearestIndex(points, targetDate);
+  if (idx < 0) return;
+
+  // window fokus
+  const spanMs = Math.max(60 * 60 * 1000, (points[points.length - 1].x - points[0].x) / 8);
+  const minX = new Date(targetDate.getTime() - spanMs);
+  const maxX = new Date(targetDate.getTime() + spanMs);
+
+  const applyTo = (chart) => {
+    if (!chart) return;
+    chart.options.scales.x.min = minX;
+    chart.options.scales.x.max = maxX;
+
+    // tampilkan tooltip angka di titik idx (programmatic tooltip) [web:320]
+    chart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+    chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: chart.chartArea.left + 20, y: chart.chartArea.top + 20 });
+    chart.update();
+  };
+
+  applyTo(chartWindRekap);
+  applyTo(chartRainRekap);
+  applyTo(chartLuxRekap);
+
+  document.getElementById("chart-wind-rekap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ===== Rebuild chart rekap
 function rebuildRekapCharts(points) {
   if (chartWindRekap) chartWindRekap.destroy();
   if (chartRainRekap) chartRainRekap.destroy();
@@ -369,7 +304,7 @@ function rebuildRekapCharts(points) {
   chartLuxRekap.update();
 }
 
-// ===== Update rekap (filter + chart + tabel)
+// ===== Update rekap view
 function updateRekapView() {
   if (!rekapInfo || !rekapTbody) return;
 
@@ -389,7 +324,7 @@ function updateRekapView() {
 
   rebuildRekapCharts(points);
 
-  // tabel (ambil 200 terakhir biar tidak berat)
+  // tabel (200 terakhir)
   rekapTbody.innerHTML = "";
   const rows = points.slice().reverse().slice(0, 200);
   rows.forEach(p => {
@@ -404,8 +339,138 @@ function updateRekapView() {
   });
 }
 
-// ===== Download CSV (hasil filter + agregasi)
+// ===== Slide mode (pan ON/OFF)
+let slideMode = false;
+
+function setSlideMode(enabled){
+  slideMode = enabled;
+
+  const apply = (chart) => {
+    if (!chart?.options?.plugins?.zoom) return;
+    chart.options.plugins.zoom.pan.enabled = enabled;                 // [web:283]
+    chart.options.plugins.zoom.pan.modifierKey = enabled ? null : "ctrl"; // [web:283]
+    chart.update();
+  };
+
+  apply(chartWindLive); apply(chartRainLive); apply(chartLuxLive);
+  apply(chartWindRekap); apply(chartRainRekap); apply(chartLuxRekap);
+
+  if (btnSlide) btnSlide.textContent = `Slide: ${enabled ? "ON" : "OFF"}`;
+}
+
+// ===== Buttons init
+function initButtons() {
+  // reset zoom
+  document.querySelectorAll("[data-reset]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.reset;
+      const map = {
+        windLive: chartWindLive, rainLive: chartRainLive, luxLive: chartLuxLive,
+        windRekap: chartWindRekap, rainRekap: chartRainRekap, luxRekap: chartLuxRekap
+      };
+      const ch = map[key];
+      if (ch && typeof ch.resetZoom === "function") ch.resetZoom();
+    });
+  });
+
+  // unpin
+  document.querySelectorAll("[data-unpin]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.unpin;
+      const map = {
+        windLive: chartWindLive, rainLive: chartRainLive, luxLive: chartLuxLive,
+        windRekap: chartWindRekap, rainRekap: chartRainRekap, luxRekap: chartLuxRekap
+      };
+      const ch = map[key];
+      if (!ch) return;
+      pinned.delete(ch);
+      ch.setActiveElements([]);
+      ch.update();
+    });
+  });
+
+  btnFilter?.addEventListener("click", () => updateRekapView());
+
+  btnClear?.addEventListener("click", () => {
+    dateStartEl.value = "";
+    dateEndEl.value = "";
+    historiFiltered = historiRaw.slice();
+    updateRekapView();
+  });
+
+  btnGotoStart?.addEventListener("click", () => {
+    if (!dateStartEl.value) return;
+    focusDateOnCharts(new Date(dateStartEl.value + "T12:00:00"));
+  });
+
+  btnGotoEnd?.addEventListener("click", () => {
+    if (!dateEndEl.value) return;
+    focusDateOnCharts(new Date(dateEndEl.value + "T12:00:00"));
+  });
+
+  btnSlide?.addEventListener("click", () => setSlideMode(!slideMode));
+}
+
+// ===== Firebase listeners
+const realtimeRef = ref(db, "/weather/keadaan_sekarang");
+onValue(realtimeRef, snap => {
+  const val = snap.val();
+  if (!val) return;
+
+  const wind = Number(val.anemometer || 0);
+  const rain = Number(val.rain_gauge || 0);
+  const lux  = Number(val.sensor_cahaya || 0);
+  const timeStr = val.waktu || "-";
+  const dt = parseToDate(timeStr);
+  if (!dt) return;
+
+  cardWind.textContent = wind.toFixed(2);
+  cardRain.textContent = rain.toFixed(2);
+  cardLux.textContent  = lux.toFixed(1);
+  cardTime.textContent = timeStr;
+  statusBanner.textContent = "Connected - Last update: " + timeStr;
+
+  pushXY(chartWindLive, dt, wind, 120);
+  pushXY(chartRainLive, dt, rain, 120);
+  pushXY(chartLuxLive,  dt, lux,  120);
+});
+
+const histRef = ref(db, "/weather/histori");
+onValue(histRef, snap => {
+  const val = snap.val();
+  historiRaw = [];
+
+  if (val) {
+    Object.keys(val).forEach(k => {
+      const row = val[k];
+      if (!row || !row.waktu) return;
+      const d = parseToDate(row.waktu);
+      if (!d) return;
+      historiRaw.push({
+        time: d,
+        timeStr: row.waktu,
+        wind: Number(row.anemometer || 0),
+        rain: Number(row.rain_gauge || 0),
+        lux:  Number(row.sensor_cahaya || 0)
+      });
+    });
+    historiRaw.sort((a, b) => a.time - b.time);
+  }
+
+  if (historiRaw.length) {
+    const first = historiRaw[0].time;
+    const last  = historiRaw[historiRaw.length - 1].time;
+    if (!dateStartEl.value) dateStartEl.value = toYMD(first);
+    if (!dateEndEl.value)   dateEndEl.value   = toYMD(last);
+  }
+
+  historiFiltered = historiRaw.slice();
+  updateRekapView();
+});
+
+// ===== CSV
 btnDownload?.addEventListener("click", () => {
+  applyDateFilter();
   if (!historiFiltered.length) return;
   const points = aggregateData(historiFiltered, currentAgg);
 
@@ -429,4 +494,5 @@ btnDownload?.addEventListener("click", () => {
 window.addEventListener("DOMContentLoaded", () => {
   initCharts();
   initButtons();
+  setSlideMode(false);
 });
