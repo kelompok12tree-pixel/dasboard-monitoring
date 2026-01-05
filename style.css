@@ -3,7 +3,6 @@
   --text:#e5e7eb;
   --muted:#9ca3af;
   --border: rgba(148,163,184,.18);
-  --accent:#10b981;
 }
 
 *{box-sizing:border-box}
@@ -37,7 +36,7 @@ body{
   padding:10px 12px;
   border-radius:10px;
   cursor:pointer;
-  font-weight:800;
+  font-weight:900;
 }
 .tab-btn.active{
   background: rgba(16,185,129,.18);
@@ -68,19 +67,10 @@ body{
   border-radius:14px;
   padding:14px;
 }
-.card h3{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:800}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:900}
 
-.value{
-  margin:0;
-  font-size:34px;
-  font-weight:900;
-  letter-spacing: .2px;
-}
-.value small{
-  font-size:14px;
-  color:#cbd5e1;
-  font-weight:900;
-}
+.value{margin:0;font-size:34px;font-weight:950;letter-spacing:.2px}
+.value small{font-size:14px;color:#cbd5e1;font-weight:900}
 
 .section-title{margin:16px 0 10px;font-size:16px}
 
@@ -103,11 +93,7 @@ body{
   gap:10px;
   margin-bottom:8px;
 }
-.panel-title{
-  font-size:14px;
-  color:#cbd5e1;
-  font-weight:900;
-}
+.panel-title{font-size:14px;color:#cbd5e1;font-weight:950}
 
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
 .btn-mini{
@@ -117,11 +103,9 @@ body{
   padding:7px 10px;
   border-radius:10px;
   cursor:pointer;
-  font-weight:900;
+  font-weight:950;
 }
-.btn-mini.ghost{
-  background: transparent;
-}
+.btn-mini.ghost{background: transparent;}
 
 .chart-wrapper{
   height:360px;
@@ -145,9 +129,10 @@ body{
   padding:10px 12px;
   border-radius:10px;
   cursor:pointer;
-  font-weight:900;
+  font-weight:950;
 }
 .btn-download.ghost{background:transparent}
+.filter-left .btn-download{padding:9px 10px}
 
 .filter-bar{
   display:flex;
@@ -166,7 +151,7 @@ body{
   gap:10px;
   flex-wrap:wrap;
   color:var(--muted);
-  font-weight:800;
+  font-weight:900;
 }
 .filter-left input{
   background: rgba(0,0,0,.2);
@@ -174,7 +159,7 @@ body{
   border-radius:10px;
   padding:8px 10px;
   color:var(--text);
-  font-weight:900;
+  font-weight:950;
 }
 .arrow{color:#cbd5e1}
 
@@ -194,4 +179,5 @@ tr:hover td{background: rgba(255,255,255,.03)}
   .cards{grid-template-columns: repeat(2, minmax(0, 1fr));}
   .grid-2{grid-template-columns: 1fr;}
   .chart-wrapper{height:320px;}
+  table{min-width:640px}
 }
