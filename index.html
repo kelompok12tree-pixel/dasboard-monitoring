@@ -2,49 +2,34 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <title>Dashboard Monitoring</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monitoring - Dashboard</title>
-
   <link rel="stylesheet" href="style.css" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Adapter time-scale date-fns -->
+  <!-- Adapter time scale date-fns -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <!-- Zoom plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
 
+  <!-- App -->
   <script type="module" src="app.js" defer></script>
 </head>
 
 <body>
   <header class="top-bar">
-    <div>
-      <h1>Monitoring Potensi Energi Terbarukan</h1>
-      <p class="subtitle">Dashboard Analisis Data Cuaca - ESP32 Firebase</p>
-    </div>
+    <h1>Dashboard Monitoring</h1>
+    <p class="subtitle">Realtime & Historis (Firebase)</p>
   </header>
 
   <main class="container">
-    <!-- Tabs utama -->
     <div class="tab-group">
       <button id="tab-realtime" class="tab-btn active">Dashboard Live</button>
       <button id="tab-recap" class="tab-btn">Analisis Historis</button>
     </div>
 
-    <!-- ===== REALTIME ===== -->
+    <!-- REALTIME -->
     <section id="section-realtime" class="section active">
-      <div id="status-banner" class="status-banner">Menghubungkan ke Firebase...</div>
-
-      <!-- Strip seperti contoh -->
-      <div class="tab-strip" style="margin-bottom:14px;">
-        <button class="pill active">Live</button>
-        <button class="pill">Menit</button>
-        <button class="pill">Jam</button>
-        <button class="pill">Hari</button>
-        <div class="spacer"></div>
-        <button id="btn-reset-live" class="pill danger">Reset Histori</button>
-      </div>
+      <div class="status-banner" id="status-banner">Menghubungkan ke Firebase...</div>
 
       <div class="cards">
         <div class="card">
@@ -65,15 +50,12 @@
         </div>
       </div>
 
-      <!-- Grid 2 kolom (bisa kamu tambah jadi 4 panel kalau sensor 4) -->
+      <h2 class="section-title">Grafik Live (tanpa geser/zoom)</h2>
+
       <div class="grid-2">
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Angin (km/h)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="windLive">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="windLive">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-wind-live"></canvas></div>
         </div>
@@ -81,10 +63,6 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Hujan Harian (mm)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="rainLive">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="rainLive">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-rain-live"></canvas></div>
         </div>
@@ -92,29 +70,22 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Cahaya (lux)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="luxLive">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="luxLive">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-lux-live"></canvas></div>
         </div>
 
         <div class="panel">
           <div class="panel-head">
-            <div class="panel-title">Keterangan</div>
-            <div class="btn-row">
-              <button class="btn-mini ghost" id="btn-note">Info</button>
-            </div>
+            <div class="panel-title">Catatan</div>
           </div>
           <div class="note-box">
-            Klik grafik untuk “pin” tooltip. Gunakan scroll/drag untuk zoom (mode X).
+            Sumbu waktu tampil jam + tanggal. Tidak ada fitur geser/drag agar data tidak “aneh”.
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== HISTORI ===== -->
+    <!-- HISTORI -->
     <section id="section-recap" class="section">
       <h2 class="section-title">Analisis Historis</h2>
 
@@ -129,7 +100,6 @@
           <button id="btn-clear" class="btn-download ghost">Reset</button>
           <button id="btn-goto-start" class="btn-download ghost">Ke Mulai</button>
           <button id="btn-goto-end" class="btn-download ghost">Ke Akhir</button>
-          <button id="btn-slide" class="btn-download ghost">Slide OFF</button>
         </div>
 
         <div class="filter-right tab-group small">
@@ -149,10 +119,6 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Angin (km/h)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="windRekap">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="windRekap">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-wind-rekap"></canvas></div>
         </div>
@@ -160,10 +126,6 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Hujan (mm)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="rainRekap">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="rainRekap">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-rain-rekap"></canvas></div>
         </div>
@@ -171,17 +133,13 @@
         <div class="panel">
           <div class="panel-head">
             <div class="panel-title">Cahaya (lux)</div>
-            <div class="btn-row">
-              <button class="btn-mini" data-reset="luxRekap">Reset Zoom</button>
-              <button class="btn-mini ghost" data-unpin="luxRekap">Unpin</button>
-            </div>
           </div>
           <div class="chart-wrapper"><canvas id="chart-lux-rekap"></canvas></div>
         </div>
 
         <div class="panel">
           <div class="panel-head">
-            <div class="panel-title">Tabel</div>
+            <div class="panel-title">Tabel (200 data terakhir)</div>
           </div>
           <div class="table-wrapper">
             <table>
