@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 
-// Firebase proyekmu
+// Firebase proyekmu (tetap dari file kamu)
 const firebaseConfig = {
   apiKey: "AIzaSyD-eCZun9Chghk2z0rdPrEuIKkMojrM5g0",
   authDomain: "monitoring-ver-j.firebaseapp.com",
@@ -20,11 +20,11 @@ const tabRealtime = document.getElementById("tab-realtime");
 const tabRecap = document.getElementById("tab-recap");
 const sectionRealtime = document.getElementById("section-realtime");
 const sectionRecap = document.getElementById("section-recap");
-const statusBanner = document.getElementById("status-banner");
 
+const statusBanner = document.getElementById("status-banner");
 const cardWind = document.getElementById("card-wind");
 const cardRain = document.getElementById("card-rain");
-const cardLux  = document.getElementById("card-lux");
+const cardLux = document.getElementById("card-lux");
 const cardTime = document.getElementById("card-time");
 
 const subTabButtons = document.querySelectorAll(".tab-btn.sub");
@@ -33,12 +33,14 @@ const rekapTbody = document.getElementById("rekap-tbody");
 const btnDownload = document.getElementById("btn-download");
 
 const dateStartEl = document.getElementById("date-start");
-const dateEndEl   = document.getElementById("date-end");
-const btnFilter   = document.getElementById("btn-filter");
-const btnClear    = document.getElementById("btn-clear");
+const dateEndEl = document.getElementById("date-end");
+const btnFilter = document.getElementById("btn-filter");
+const btnClear = document.getElementById("btn-clear");
 const btnGotoStart = document.getElementById("btn-goto-start");
-const btnGotoEnd   = document.getElementById("btn-goto-end");
-const btnSlide     = document.getElementById("btn-slide");
+const btnGotoEnd = document.getElementById("btn-goto-end");
+const btnSlide = document.getElementById("btn-slide");
+
+const btnResetLive = document.getElementById("btn-reset-live");
 
 let currentAgg = "minute";
 let historiRaw = [];
@@ -52,13 +54,13 @@ let chartWindRekap, chartRainRekap, chartLuxRekap;
 const pinned = new Map();
 
 // ===== Tabs
-tabRealtime.addEventListener("click", () => {
+tabRealtime?.addEventListener("click", () => {
   tabRealtime.classList.add("active");
   tabRecap.classList.remove("active");
   sectionRealtime.classList.add("active");
   sectionRecap.classList.remove("active");
 });
-tabRecap.addEventListener("click", () => {
+tabRecap?.addEventListener("click", () => {
   tabRecap.classList.add("active");
   tabRealtime.classList.remove("active");
   sectionRecap.classList.add("active");
@@ -75,8 +77,9 @@ subTabButtons.forEach(btn => {
   });
 });
 
-// ===== Utils waktu
+// ===== Utils waktu (tetap seperti file kamu)
 function parseToDate(str) {
+  if (!str || typeof str !== "string") return null;
   const [dp, tp] = str.split(" ");
   if (!dp || !tp) return null;
   const [y, m, d] = dp.split("-").map(Number);
@@ -92,7 +95,6 @@ const pinTooltipPlugin = {
   afterEvent(chart, args) {
     const e = args.event;
     if (!e) return;
-
     if (e.type === "click") {
       const points = chart.getElementsAtEventForMode(e.native, "nearest", { intersect: true }, true);
       if (points.length) {
@@ -106,8 +108,8 @@ const pinTooltipPlugin = {
   }
 };
 
-// ===== Chart factory (time scale + zoom)
-function makeTimeChart(canvasId, title, color, unit, digits=2) {
+// ===== Chart factory
+function makeTimeChart(canvasId, title, color, unit, digits = 2) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return null;
 
@@ -142,39 +144,24 @@ function makeTimeChart(canvasId, title, color, unit, digits=2) {
           }
         },
         zoom: {
-          pan: { enabled: false, mode: "x", modifierKey: "ctrl" }, // OFF default [web:283]
+          pan: { enabled: false, mode: "x", modifierKey: "ctrl" },
           zoom: {
             wheel: { enabled: true },
             pinch: { enabled: true },
-            drag:  { enabled: true },
+            drag: { enabled: true },
             mode: "x"
           }
         }
       },
       scales: {
         x: {
-          type: "time", // supaya waktu tidak numpuk [web:297]
-          time: {
-            displayFormats: {
-              minute: "HH:mm",
-              hour: "HH:mm",
-              day: "dd/MM",
-              month: "MM/yyyy"
-            }
-          },
-          ticks: {
-            color: "#cbd5e1",
-            font: { size: 12, weight: "700" },
-            maxTicksLimit: 7
-          },
+          type: "time",
+          time: { displayFormats: { minute: "HH:mm", hour: "HH:mm", day: "dd/MM", month: "MM/yyyy" } },
+          ticks: { color: "#cbd5e1", font: { size: 12, weight: "700" }, maxTicksLimit: 7 },
           grid: { color: "rgba(148,163,184,.12)" }
         },
         y: {
-          ticks: {
-            color: "#cbd5e1",
-            font: { size: 12, weight: "700" },
-            callback: (v)=>Number(v).toFixed(digits)
-          },
+          ticks: { color: "#cbd5e1", font: { size: 12, weight: "700" }, callback: (v) => Number(v).toFixed(digits) },
           grid: { color: "rgba(148,163,184,.12)" }
         }
       }
@@ -183,14 +170,12 @@ function makeTimeChart(canvasId, title, color, unit, digits=2) {
   });
 }
 
-// ===== Init charts
 function initCharts() {
   chartWindLive = makeTimeChart("chart-wind-live", "Angin", "#22c55e", "km/h", 2);
   chartRainLive = makeTimeChart("chart-rain-live", "Hujan Harian", "#38bdf8", "mm", 2);
   chartLuxLive  = makeTimeChart("chart-lux-live",  "Cahaya", "#fbbf24", "lux", 1);
 }
 
-// ===== Push live
 function pushXY(chart, xDate, yVal, maxPoints = 120) {
   if (!chart) return;
   const ds = chart.data.datasets[0];
@@ -202,7 +187,6 @@ function pushXY(chart, xDate, yVal, maxPoints = 120) {
 // ===== Filter tanggal
 function applyDateFilter() {
   if (!historiRaw.length) { historiFiltered = []; return; }
-
   const s = dateStartEl.value ? new Date(dateStartEl.value + "T00:00:00") : null;
   const e = dateEndEl.value ? new Date(dateEndEl.value + "T23:59:59") : null;
 
@@ -220,16 +204,19 @@ function aggregateData(data, mode) {
   data.forEach(item => {
     const d = item.time;
     let keyDate;
-
     if (mode === "minute") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
     else if (mode === "hour") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0, 0);
     else if (mode === "day") keyDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
     else keyDate = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
 
     const key = keyDate.getTime();
-    if (!map.has(key)) map.set(key, { x: keyDate, n:0, w:0, r:0, l:0 });
+    if (!map.has(key)) map.set(key, { x: keyDate, n: 0, w: 0, r: 0, l: 0 });
+
     const b = map.get(key);
-    b.n++; b.w += item.wind; b.r += item.rain; b.l += item.lux;
+    b.n++;
+    b.w += item.wind;
+    b.r += item.rain;
+    b.l += item.lux;
   });
 
   const buckets = Array.from(map.values()).map(b => ({
@@ -238,54 +225,11 @@ function aggregateData(data, mode) {
     rain: b.r / b.n,
     lux:  b.l / b.n
   }));
-  buckets.sort((a,b)=>a.x-b.x);
+
+  buckets.sort((a, b) => a.x - b.x);
   return buckets;
 }
 
-// ===== Fokus tanggal + tooltip angka (Ke Mulai/Ke Akhir)
-function findNearestIndex(points, targetDate){
-  if (!points.length) return -1;
-  let best = 0;
-  let bestDiff = Math.abs(points[0].x - targetDate);
-  for (let i = 1; i < points.length; i++){
-    const diff = Math.abs(points[i].x - targetDate);
-    if (diff < bestDiff){ bestDiff = diff; best = i; }
-  }
-  return best;
-}
-
-function focusDateOnCharts(targetDate){
-  applyDateFilter();
-  const points = aggregateData(historiFiltered, currentAgg);
-  if (!points.length) return;
-
-  const idx = findNearestIndex(points, targetDate);
-  if (idx < 0) return;
-
-  // window fokus
-  const spanMs = Math.max(60 * 60 * 1000, (points[points.length - 1].x - points[0].x) / 8);
-  const minX = new Date(targetDate.getTime() - spanMs);
-  const maxX = new Date(targetDate.getTime() + spanMs);
-
-  const applyTo = (chart) => {
-    if (!chart) return;
-    chart.options.scales.x.min = minX;
-    chart.options.scales.x.max = maxX;
-
-    // tampilkan tooltip angka di titik idx (programmatic tooltip) [web:320]
-    chart.setActiveElements([{ datasetIndex: 0, index: idx }]);
-    chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: chart.chartArea.left + 20, y: chart.chartArea.top + 20 });
-    chart.update();
-  };
-
-  applyTo(chartWindRekap);
-  applyTo(chartRainRekap);
-  applyTo(chartLuxRekap);
-
-  document.getElementById("chart-wind-rekap")?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-// ===== Rebuild chart rekap
 function rebuildRekapCharts(points) {
   if (chartWindRekap) chartWindRekap.destroy();
   if (chartRainRekap) chartRainRekap.destroy();
@@ -304,24 +248,21 @@ function rebuildRekapCharts(points) {
   chartLuxRekap.update();
 }
 
-// ===== Update rekap view
 function updateRekapView() {
   if (!rekapInfo || !rekapTbody) return;
 
   applyDateFilter();
-
   if (!historiFiltered.length) {
     rekapInfo.textContent = "Tidak ada data pada rentang tanggal tersebut.";
     rekapTbody.innerHTML = "";
     if (chartWindRekap) chartWindRekap.destroy();
     if (chartRainRekap) chartRainRekap.destroy();
-    if (chartLuxRekap)  chartLuxRekap.destroy();
+    if (chartLuxRekap) chartLuxRekap.destroy();
     return;
   }
 
   const points = aggregateData(historiFiltered, currentAgg);
   rekapInfo.textContent = `Showing ${points.length} points (${currentAgg})`;
-
   rebuildRekapCharts(points);
 
   // tabel (200 terakhir)
@@ -339,23 +280,22 @@ function updateRekapView() {
   });
 }
 
-// ===== Slide mode (pan ON/OFF)
+// ===== Slide mode (pan)
 let slideMode = false;
-
-function setSlideMode(enabled){
+function setSlideMode(enabled) {
   slideMode = enabled;
 
   const apply = (chart) => {
     if (!chart?.options?.plugins?.zoom) return;
-    chart.options.plugins.zoom.pan.enabled = enabled;                 // [web:283]
-    chart.options.plugins.zoom.pan.modifierKey = enabled ? null : "ctrl"; // [web:283]
+    chart.options.plugins.zoom.pan.enabled = enabled;
+    chart.options.plugins.zoom.pan.modifierKey = enabled ? null : "ctrl";
     chart.update();
   };
 
   apply(chartWindLive); apply(chartRainLive); apply(chartLuxLive);
   apply(chartWindRekap); apply(chartRainRekap); apply(chartLuxRekap);
 
-  if (btnSlide) btnSlide.textContent = `Slide: ${enabled ? "ON" : "OFF"}`;
+  if (btnSlide) btnSlide.textContent = `Slide ${enabled ? "ON" : "OFF"}`;
 }
 
 // ===== Buttons init
@@ -389,8 +329,7 @@ function initButtons() {
     });
   });
 
-  btnFilter?.addEventListener("click", () => updateRekapView());
-
+  btnFilter?.addEventListener("click", updateRekapView);
   btnClear?.addEventListener("click", () => {
     dateStartEl.value = "";
     dateEndEl.value = "";
@@ -398,101 +337,110 @@ function initButtons() {
     updateRekapView();
   });
 
-  btnGotoStart?.addEventListener("click", () => {
-    if (!dateStartEl.value) return;
-    focusDateOnCharts(new Date(dateStartEl.value + "T12:00:00"));
-  });
-
-  btnGotoEnd?.addEventListener("click", () => {
-    if (!dateEndEl.value) return;
-    focusDateOnCharts(new Date(dateEndEl.value + "T12:00:00"));
-  });
-
   btnSlide?.addEventListener("click", () => setSlideMode(!slideMode));
+
+  // tombol merah seperti screenshot: reset tampilan live (style-only)
+  btnResetLive?.addEventListener("click", () => {
+    [chartWindLive, chartRainLive, chartLuxLive].forEach(ch => {
+      if (!ch) return;
+      pinned.delete(ch);
+      ch.setActiveElements([]);
+      if (typeof ch.resetZoom === "function") ch.resetZoom();
+      ch.update();
+    });
+  });
+
+  // CSV
+  btnDownload?.addEventListener("click", () => {
+    applyDateFilter();
+    if (!historiFiltered.length) return;
+    const points = aggregateData(historiFiltered, currentAgg);
+
+    let csv = "Waktu,Wind(km/h),Rain(mm),Lux(lux)\n";
+    points.forEach(p => {
+      csv += `${p.x.toISOString()},${p.wind.toFixed(2)},${p.rain.toFixed(2)},${p.lux.toFixed(1)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rekap-${currentAgg}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
 }
 
 // ===== Firebase listeners
-const realtimeRef = ref(db, "/weather/keadaan_sekarang");
-onValue(realtimeRef, snap => {
-  const val = snap.val();
-  if (!val) return;
+function initFirebase() {
+  const realtimeRef = ref(db, "weather/keadaan_sekarang");
+  onValue(realtimeRef, snap => {
+    const val = snap.val();
+    if (!val) return;
 
-  const wind = Number(val.anemometer || 0);
-  const rain = Number(val.rain_gauge || 0);
-  const lux  = Number(val.sensor_cahaya || 0);
-  const timeStr = val.waktu || "-";
-  const dt = parseToDate(timeStr);
-  if (!dt) return;
+    const wind = Number(val.anemometer || 0);
+    const rain = Number(val.raingauge || 0);
+    const lux  = Number(val.sensorcahaya || 0);
 
-  cardWind.textContent = wind.toFixed(2);
-  cardRain.textContent = rain.toFixed(2);
-  cardLux.textContent  = lux.toFixed(1);
-  cardTime.textContent = timeStr;
-  statusBanner.textContent = "Connected - Last update: " + timeStr;
+    const timeStr = val.waktu || "-";
+    const dt = parseToDate(timeStr);
+    if (!dt) return;
 
-  pushXY(chartWindLive, dt, wind, 120);
-  pushXY(chartRainLive, dt, rain, 120);
-  pushXY(chartLuxLive,  dt, lux,  120);
-});
+    cardWind.textContent = wind.toFixed(2);
+    cardRain.textContent = rain.toFixed(2);
+    cardLux.textContent = lux.toFixed(1);
+    cardTime.textContent = timeStr;
 
-const histRef = ref(db, "/weather/histori");
-onValue(histRef, snap => {
-  const val = snap.val();
-  historiRaw = [];
+    statusBanner.textContent = `Connected - Last update ${timeStr}`;
 
-  if (val) {
-    Object.keys(val).forEach(k => {
-      const row = val[k];
-      if (!row || !row.waktu) return;
-      const d = parseToDate(row.waktu);
-      if (!d) return;
-      historiRaw.push({
-        time: d,
-        timeStr: row.waktu,
-        wind: Number(row.anemometer || 0),
-        rain: Number(row.rain_gauge || 0),
-        lux:  Number(row.sensor_cahaya || 0)
-      });
-    });
-    historiRaw.sort((a, b) => a.time - b.time);
-  }
-
-  if (historiRaw.length) {
-    const first = historiRaw[0].time;
-    const last  = historiRaw[historiRaw.length - 1].time;
-    if (!dateStartEl.value) dateStartEl.value = toYMD(first);
-    if (!dateEndEl.value)   dateEndEl.value   = toYMD(last);
-  }
-
-  historiFiltered = historiRaw.slice();
-  updateRekapView();
-});
-
-// ===== CSV
-btnDownload?.addEventListener("click", () => {
-  applyDateFilter();
-  if (!historiFiltered.length) return;
-  const points = aggregateData(historiFiltered, currentAgg);
-
-  let csv = "Waktu,Wind(km/h),Rain(mm),Lux(lux)\n";
-  points.forEach(p => {
-    csv += `${p.x.toISOString()},${p.wind.toFixed(2)},${p.rain.toFixed(2)},${p.lux.toFixed(1)}\n`;
+    pushXY(chartWindLive, dt, wind, 120);
+    pushXY(chartRainLive, dt, rain, 120);
+    pushXY(chartLuxLive,  dt, lux, 120);
   });
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `rekap_${currentAgg}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
+  const histRef = ref(db, "weather/histori");
+  onValue(histRef, snap => {
+    const val = snap.val();
+    historiRaw = [];
 
-// init
+    if (val) {
+      Object.keys(val).forEach(k => {
+        const row = val[k];
+        if (!row || !row.waktu) return;
+
+        const d = parseToDate(row.waktu);
+        if (!d) return;
+
+        historiRaw.push({
+          time: d,
+          timeStr: row.waktu,
+          wind: Number(row.anemometer || 0),
+          rain: Number(row.raingauge || 0),
+          lux:  Number(row.sensorcahaya || 0)
+        });
+      });
+    }
+
+    historiRaw.sort((a, b) => a.time - b.time);
+
+    if (historiRaw.length) {
+      const first = historiRaw[0].time;
+      const last = historiRaw[historiRaw.length - 1].time;
+      if (!dateStartEl.value) dateStartEl.value = toYMD(first);
+      if (!dateEndEl.value) dateEndEl.value = toYMD(last);
+    }
+
+    historiFiltered = historiRaw.slice();
+    updateRekapView();
+  });
+}
+
+// ===== init
 window.addEventListener("DOMContentLoaded", () => {
   initCharts();
   initButtons();
   setSlideMode(false);
+  initFirebase();
 });
