@@ -23,7 +23,6 @@ body{
   background: rgba(0,0,0,.25);
   backdrop-filter: blur(6px);
 }
-
 .top-bar h1{margin:0;font-size:22px}
 .subtitle{margin:4px 0 0;color:var(--muted);font-size:13px}
 
@@ -58,37 +57,6 @@ body{
   margin-bottom:14px;
 }
 
-/* Strip tab (mirip screenshot) */
-.tab-strip{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  padding:10px 12px;
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(10,15,20,.55);
-  border-radius:12px;
-}
-.tab-strip .spacer{flex:1}
-
-.pill{
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-  padding:8px 12px;
-  border-radius:10px;
-  font-weight:900;
-  cursor:pointer;
-}
-.pill.active{
-  background: rgba(59,130,246,.20);
-  border-color: rgba(59,130,246,.45);
-}
-.pill.danger{
-  background: rgba(239,68,68,.18);
-  border-color: rgba(239,68,68,.45);
-  color:#fecaca;
-}
-
 .cards{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -110,15 +78,16 @@ body{
 .grid-2{
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:16px;
+  gap:12px;
 }
 
 .panel{
   border:1px solid rgba(148,163,184,.22);
-  background: rgba(10,15,20,.55); /* lebih flat seperti screenshot */
+  background: rgba(15,23,42,.60);
   border-radius:14px;
   padding:12px;
 }
+
 .panel-head{
   display:flex;
   align-items:center;
@@ -126,20 +95,8 @@ body{
   gap:10px;
   margin-bottom:8px;
 }
+
 .panel-title{font-size:14px;color:#cbd5e1;font-weight:950}
-
-.btn-row{display:flex;gap:8px;flex-wrap:wrap}
-
-.btn-mini{
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(59,130,246,.14);
-  color: var(--text);
-  padding:7px 10px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:950;
-}
-.btn-mini.ghost{background: transparent;}
 
 .chart-wrapper{
   height:360px;
@@ -188,6 +145,7 @@ body{
   background: rgba(17,24,39,.55);
   border-radius:14px;
 }
+
 .filter-left{
   display:flex;
   align-items:center;
@@ -207,12 +165,11 @@ body{
 .arrow{color:#cbd5e1}
 
 .table-wrapper{
-  border:1px solid rgba(148,163,184,.18);
-  background: rgba(17,24,39,.25);
-  border-radius:12px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(17,24,39,.35);
+  border-radius:14px;
   overflow:auto;
 }
-
 table{width:100%;border-collapse:collapse;min-width:720px}
 th,td{padding:10px 12px;border-bottom:1px solid rgba(148,163,184,.18);font-size:13px}
 th{color:var(--muted);text-align:left;background: rgba(0,0,0,.15)}
