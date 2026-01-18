@@ -7,84 +7,110 @@
   <link rel="stylesheet" href="style.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-
   <script type="module" src="app.js" defer></script>
 </head>
 
 <body>
   <header class="top-bar">
-    <h1>Dashboard Monitoring</h1>
-    <p class="subtitle">Realtime & Historis (Firebase)</p>
+    <h1>Monitoring Potensi Energi Terbarukan</h1>
+    <p class="subtitle">Dashboard Analisis Data Cuaca - ESP32 → Firebase</p>
   </header>
 
   <main class="container">
     <div class="tab-group">
-      <button id="tab-realtime" class="tab-btn">Dashboard Live</button>
-      <button id="tab-recap" class="tab-btn active">Analisis Historis</button>
+      <button id="tab-realtime" class="tab-btn active">Dashboard Live</button>
+      <button id="tab-recap" class="tab-btn">Analisis Historis</button>
     </div>
 
-    <!-- REALTIME (opsional) -->
-    <section id="section-realtime" class="section">
+    <!-- REALTIME -->
+    <section id="section-realtime" class="section active">
       <div class="status-banner" id="status-banner">Menghubungkan ke Firebase...</div>
-    </section>
 
-    <!-- HISTORI -->
-    <section id="section-recap" class="section active">
-      <h2 class="section-title">Analisis Historis</h2>
-
-      <div class="pill-row">
-        <button class="pill tab-btn sub active" data-agg="minute">Menit</button>
-        <button class="pill tab-btn sub" data-agg="hour">Jam</button>
-        <button class="pill tab-btn sub" data-agg="day">Hari</button>
-        <button class="pill tab-btn sub" data-agg="month">Bulan</button>
+      <div class="cards">
+        <div class="card">
+          <h3>Kecepatan Angin</h3>
+          <p class="value"><span id="card-wind">-</span> <small>km/h</small></p>
+        </div>
+        <div class="card">
+          <h3>Curah Hujan Harian</h3>
+          <p class="value"><span id="card-rain">-</span> <small>mm</small></p>
+        </div>
+        <div class="card">
+          <h3>Intensitas Cahaya</h3>
+          <p class="value"><span id="card-lux">-</span> <small>lux</small></p>
+        </div>
+        <div class="card">
+          <h3>Timestamp</h3>
+          <p class="value"><span id="card-time">-</span></p>
+        </div>
       </div>
 
-      <div class="meta-row">
-        <div id="rekap-info" class="meta-text">Mode: - | Total grup: -</div>
-        <button id="btn-download" class="btn-download">Download CSV</button>
-      </div>
+      <h2 class="section-title">Grafik Live (terpisah)</h2>
 
       <div class="grid-2">
         <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">Angin (km/h)</div>
-          </div>
-          <div class="chart-wrapper"><canvas id="chart-wind-rekap"></canvas></div>
+          <div class="panel-title">Angin (km/h)</div>
+          <div class="chart-wrapper small"><canvas id="chart-wind-live"></canvas></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">Hujan (mm)</div>
-          </div>
-          <div class="chart-wrapper"><canvas id="chart-rain-rekap"></canvas></div>
+          <div class="panel-title">Hujan Harian (mm)</div>
+          <div class="chart-wrapper small"><canvas id="chart-rain-live"></canvas></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">Cahaya (lux)</div>
-          </div>
-          <div class="chart-wrapper"><canvas id="chart-lux-rekap"></canvas></div>
+          <div class="panel-title">Cahaya (lux)</div>
+          <div class="chart-wrapper small"><canvas id="chart-lux-live"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORI -->
+    <section id="section-recap" class="section">
+      <h2 class="section-title">Analisis Historis</h2>
+
+      <div class="tab-group small">
+        <button class="tab-btn sub active" data-agg="minute">Menit</button>
+        <button class="tab-btn sub" data-agg="hour">Jam</button>
+        <button class="tab-btn sub" data-agg="day">Hari</button>
+        <button class="tab-btn sub" data-agg="month">Bulan</button>
+      </div>
+
+      <div class="toolbar">
+        <span id="rekap-info">Memuat data...</span>
+        <button id="btn-download" class="btn-download">Download CSV</button>
+      </div>
+
+      <h3 class="subheading">Grafik Historis (terpisah)</h3>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-title">Angin (km/h)</div>
+          <div class="chart-wrapper small"><canvas id="chart-wind-rekap"></canvas></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">Tabel (200 data terakhir)</div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Waktu</th>
-                  <th>Angin</th>
-                  <th>Hujan</th>
-                  <th>Cahaya</th>
-                </tr>
-              </thead>
-              <tbody id="rekap-tbody"></tbody>
-            </table>
-          </div>
+          <div class="panel-title">Hujan (mm)</div>
+          <div class="chart-wrapper small"><canvas id="chart-rain-rekap"></canvas></div>
         </div>
+
+        <div class="panel">
+          <div class="panel-title">Cahaya (lux)</div>
+          <div class="chart-wrapper small"><canvas id="chart-lux-rekap"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Angin (km/h)</th>
+              <th>Hujan (mm)</th>
+              <th>Cahaya (lux)</th>
+            </tr>
+          </thead>
+          <tbody id="rekap-tbody"></tbody>
+        </table>
       </div>
     </section>
   </main>
