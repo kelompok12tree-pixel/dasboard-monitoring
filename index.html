@@ -2,37 +2,49 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitoring Potensi Energi Terbarukan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoring - Dashboard</title>
+
   <link rel="stylesheet" href="style.css" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Adapter untuk time scale (date-fns) -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script> <!-- [web:297] -->
-
+  <!-- Adapter time-scale date-fns -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <!-- Zoom plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script> <!-- [web:283] -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
 
   <script type="module" src="app.js" defer></script>
 </head>
 
 <body>
   <header class="top-bar">
-    <h1>Monitoring Potensi Energi Terbarukan</h1>
-    <p class="subtitle">Dashboard Analisis Data Cuaca - ESP32 → Firebase</p>
+    <div>
+      <h1>Monitoring Potensi Energi Terbarukan</h1>
+      <p class="subtitle">Dashboard Analisis Data Cuaca - ESP32 Firebase</p>
+    </div>
   </header>
 
   <main class="container">
+    <!-- Tabs utama -->
     <div class="tab-group">
       <button id="tab-realtime" class="tab-btn active">Dashboard Live</button>
       <button id="tab-recap" class="tab-btn">Analisis Historis</button>
     </div>
 
-    <!-- ================== REALTIME ================== -->
+    <!-- ===== REALTIME ===== -->
     <section id="section-realtime" class="section active">
-      <div class="status-banner" id="status-banner">Menghubungkan ke Firebase...</div>
+      <div id="status-banner" class="status-banner">Menghubungkan ke Firebase...</div>
+
+      <!-- Strip seperti contoh -->
+      <div class="tab-strip" style="margin-bottom:14px;">
+        <button class="pill active">Live</button>
+        <button class="pill">Menit</button>
+        <button class="pill">Jam</button>
+        <button class="pill">Hari</button>
+        <div class="spacer"></div>
+        <button id="btn-reset-live" class="pill danger">Reset Histori</button>
+      </div>
 
       <div class="cards">
         <div class="card">
@@ -53,8 +65,7 @@
         </div>
       </div>
 
-      <h2 class="section-title">Grafik Live (Zoom + Tap)</h2>
-
+      <!-- Grid 2 kolom (bisa kamu tambah jadi 4 panel kalau sensor 4) -->
       <div class="grid-2">
         <div class="panel">
           <div class="panel-head">
@@ -88,31 +99,40 @@
           </div>
           <div class="chart-wrapper"><canvas id="chart-lux-live"></canvas></div>
         </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Keterangan</div>
+            <div class="btn-row">
+              <button class="btn-mini ghost" id="btn-note">Info</button>
+            </div>
+          </div>
+          <div class="note-box">
+            Klik grafik untuk “pin” tooltip. Gunakan scroll/drag untuk zoom (mode X).
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ================== HISTORI ================== -->
+    <!-- ===== HISTORI ===== -->
     <section id="section-recap" class="section">
       <h2 class="section-title">Analisis Historis</h2>
 
       <div class="filter-bar">
         <div class="filter-left">
           <label>Mulai</label>
-          <input id="date-start" type="date">
+          <input id="date-start" type="date" />
           <span class="arrow">→</span>
           <label>Sampai</label>
-          <input id="date-end" type="date">
-
+          <input id="date-end" type="date" />
           <button id="btn-filter" class="btn-download">Filter</button>
           <button id="btn-clear" class="btn-download ghost">Reset</button>
-
           <button id="btn-goto-start" class="btn-download ghost">Ke Mulai</button>
           <button id="btn-goto-end" class="btn-download ghost">Ke Akhir</button>
-
-          <button id="btn-slide" class="btn-download">Slide: OFF</button>
+          <button id="btn-slide" class="btn-download ghost">Slide OFF</button>
         </div>
 
-        <div class="filter-right">
+        <div class="filter-right tab-group small">
           <button class="tab-btn sub active" data-agg="minute">Per Menit</button>
           <button class="tab-btn sub" data-agg="hour">Per Jam</button>
           <button class="tab-btn sub" data-agg="day">Per Hari</button>
@@ -158,20 +178,25 @@
           </div>
           <div class="chart-wrapper"><canvas id="chart-lux-rekap"></canvas></div>
         </div>
-      </div>
 
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Waktu</th>
-              <th>Angin (km/h)</th>
-              <th>Hujan (mm)</th>
-              <th>Cahaya (lux)</th>
-            </tr>
-          </thead>
-          <tbody id="rekap-tbody"></tbody>
-        </table>
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Tabel</div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Angin (km/h)</th>
+                  <th>Hujan (mm)</th>
+                  <th>Cahaya (lux)</th>
+                </tr>
+              </thead>
+              <tbody id="rekap-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
   </main>
