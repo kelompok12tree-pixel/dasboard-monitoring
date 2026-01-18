@@ -1,137 +1,92 @@
-:root{
-  --bg:#070b10;
-  --text:#e5e7eb;
-  --muted:#a3aab6;
-  --border: rgba(148,163,184,.18);
-}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background:
-    radial-gradient(1100px 650px at 15% 10%, rgba(16,185,129,.10), transparent 60%),
-    radial-gradient(900px 600px at 85% 20%, rgba(59,130,246,.10), transparent 55%),
-    var(--bg);
-  color:var(--text);
-}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
-.top-bar{
-  padding:18px 20px;
-  border-bottom:1px solid var(--border);
-  background: rgba(0,0,0,.25);
-  backdrop-filter: blur(6px);
-}
-.top-bar h1{margin:0;font-size:22px}
-.subtitle{margin:4px 0 0;color:var(--muted);font-size:13px}
+  <script type="module" src="app.js" defer></script>
+</head>
 
-.container{max-width:1200px;margin:0 auto;padding:18px}
+<body>
+  <header class="top-bar">
+    <h1>Dashboard Monitoring</h1>
+    <p class="subtitle">Realtime & Historis (Firebase)</p>
+  </header>
 
-.tab-group{display:flex;gap:10px;margin:6px 0 14px;flex-wrap:wrap}
-.tab-btn{
-  background: rgba(255,255,255,.02);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:10px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:900;
-}
-.tab-btn.active{
-  background: rgba(16,185,129,.16);
-  border-color: rgba(16,185,129,.35);
-}
+  <main class="container">
+    <div class="tab-group">
+      <button id="tab-realtime" class="tab-btn">Dashboard Live</button>
+      <button id="tab-recap" class="tab-btn active">Analisis Historis</button>
+    </div>
 
-.section{display:none}
-.section.active{display:block}
+    <!-- REALTIME (opsional) -->
+    <section id="section-realtime" class="section">
+      <div class="status-banner" id="status-banner">Menghubungkan ke Firebase...</div>
+    </section>
 
-.status-banner{
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(17,24,39,.68);
-  border-radius:12px;
-  padding:10px 12px;
-  color:var(--muted);
-  margin-bottom:14px;
-}
+    <!-- HISTORI -->
+    <section id="section-recap" class="section active">
+      <h2 class="section-title">Analisis Historis</h2>
 
-.section-title{margin:16px 0 10px;font-size:18px}
+      <div class="pill-row">
+        <button class="pill tab-btn sub active" data-agg="minute">Menit</button>
+        <button class="pill tab-btn sub" data-agg="hour">Jam</button>
+        <button class="pill tab-btn sub" data-agg="day">Hari</button>
+        <button class="pill tab-btn sub" data-agg="month">Bulan</button>
+      </div>
 
-.pill-row{display:flex;gap:10px;flex-wrap:wrap;margin: 10px 0 14px}
-.pill{
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(255,255,255,.03);
-  color: var(--text);
-  padding:10px 14px;
-  border-radius:12px;
-  font-weight:900;
-  cursor:pointer;
-}
-.pill.active{
-  background: rgba(16,185,129,.20);
-  border-color: rgba(16,185,129,.40);
-}
+      <div class="meta-row">
+        <div id="rekap-info" class="meta-text">Mode: - | Total grup: -</div>
+        <button id="btn-download" class="btn-download">Download CSV</button>
+      </div>
 
-.meta-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin: 6px 0 14px;
-}
-.meta-text{color:var(--muted);font-weight:900}
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Angin (km/h)</div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-wind-rekap"></canvas></div>
+        </div>
 
-.btn-download{
-  border:1px solid rgba(148,163,184,.22);
-  background: rgba(16,185,129,.18);
-  color:var(--text);
-  padding:10px 14px;
-  border-radius:12px;
-  cursor:pointer;
-  font-weight:950;
-}
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Hujan (mm)</div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-rain-rekap"></canvas></div>
+        </div>
 
-.grid-2{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:16px;
-}
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Cahaya (lux)</div>
+          </div>
+          <div class="chart-wrapper"><canvas id="chart-lux-rekap"></canvas></div>
+        </div>
 
-.panel{
-  border:1px solid rgba(148,163,184,.22);
-  background: linear-gradient(180deg, rgba(11,18,32,.85), rgba(10,19,38,.70));
-  border-radius:14px;
-  padding:14px;
-}
-
-.panel-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:10px;
-}
-.panel-title{font-size:14px;color:#cbd5e1;font-weight:950}
-
-.chart-wrapper{
-  height:320px;
-  border-radius:12px;
-  overflow:hidden;
-}
-
-.table-wrapper{
-  border:1px solid rgba(148,163,184,.18);
-  background: rgba(17,24,39,.25);
-  border-radius:12px;
-  overflow:auto;
-  max-height: 320px;
-}
-table{width:100%;border-collapse:collapse;min-width:680px}
-th,td{padding:10px 12px;border-bottom:1px solid rgba(148,163,184,.18);font-size:13px}
-th{color:var(--muted);text-align:left;background: rgba(0,0,0,.15)}
-tr:hover td{background: rgba(255,255,255,.03)}
-
-@media (max-width: 900px){
-  .grid-2{grid-template-columns: 1fr;}
-  .chart-wrapper{height:300px;}
-  table{min-width:640px}
-}
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Tabel (200 data terakhir)</div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Angin</th>
+                  <th>Hujan</th>
+                  <th>Cahaya</th>
+                </tr>
+              </thead>
+              <tbody id="rekap-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
