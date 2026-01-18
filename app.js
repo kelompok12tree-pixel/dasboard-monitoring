@@ -444,3 +444,4 @@ window.addEventListener("DOMContentLoaded", () => {
   setSlideMode(false);
   initFirebase();
 });
+
