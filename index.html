@@ -76,6 +76,20 @@
         <button class="tab-btn sub" data-agg="month">Bulan</button>
       </div>
 
+      <!-- FILTER TANGGAL -->
+      <div class="toolbar filterbar">
+        <label>
+          Dari:
+          <input type="date" id="filter-from" />
+        </label>
+        <label>
+          Sampai:
+          <input type="date" id="filter-to" />
+        </label>
+        <button id="btn-apply-filter" class="btn-download">Terapkan</button>
+        <button id="btn-reset-filter" class="tab-btn">Reset</button>
+      </div>
+
       <div class="toolbar">
         <span id="rekap-info">Memuat data...</span>
         <button id="btn-download" class="btn-download">Download CSV</button>
