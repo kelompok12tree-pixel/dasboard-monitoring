@@ -111,6 +111,16 @@ body{
   color:var(--muted);
   font-weight:800;
 }
+.filterbar{
+  justify-content:flex-start;
+  flex-wrap:wrap;
+}
+.filterbar label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
 .btn-download{
   border:1px solid var(--border);
   background: rgba(16,185,129,.18);
@@ -132,6 +142,14 @@ table{width:100%;border-collapse:collapse;min-width:720px}
 th,td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
 th{color:var(--muted);text-align:left;background: rgba(0,0,0,.15)}
 tr:hover td{background: rgba(255,255,255,.03)}
+
+input[type="date"]{
+  background: rgba(17,24,39,.55);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 10px;
+}
 
 @media (max-width: 900px){
   .cards{grid-template-columns: repeat(2, minmax(0, 1fr));}
