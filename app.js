@@ -31,6 +31,12 @@ const rekapInfo = document.getElementById("rekap-info");
 const rekapTbody = document.getElementById("rekap-tbody");
 const btnDownload = document.getElementById("btn-download");
 
+// Filter tanggal
+const filterFrom = document.getElementById("filter-from");
+const filterTo = document.getElementById("filter-to");
+const btnApplyFilter = document.getElementById("btn-apply-filter");
+const btnResetFilter = document.getElementById("btn-reset-filter");
+
 let currentAgg = "minute";
 let historiData = [];
 
@@ -62,6 +68,14 @@ subTabButtons.forEach(btn => {
   });
 });
 
+// ===== Filter events
+btnApplyFilter?.addEventListener("click", () => updateRekapView());
+btnResetFilter?.addEventListener("click", () => {
+  if (filterFrom) filterFrom.value = "";
+  if (filterTo) filterTo.value = "";
+  updateRekapView();
+});
+
 // ===== Utils waktu
 function parseToDate(str) {
   if (!str || typeof str !== "string") return null;
@@ -72,6 +86,19 @@ function parseToDate(str) {
   return new Date(y, m - 1, d, hh, mm, ss);
 }
 function pad2(n) { return n.toString().padStart(2, "0"); }
+
+// ===== Filter data by date range
+function filterByDateRange(data, fromStr, toStr) {
+  const from = fromStr ? new Date(fromStr + "T00:00:00") : null;
+  const to   = toStr   ? new Date(toStr   + "T23:59:59") : null;
+
+  return data.filter(item => {
+    const t = item.time;
+    if (from && t < from) return false;
+    if (to && t > to) return false;
+    return true;
+  });
+}
 
 // ===== Tap tooltip plugin (sinkron 3 chart)
 function makeTapTooltipPlugin(getCharts) {
@@ -85,7 +112,7 @@ function makeTapTooltipPlugin(getCharts) {
       const points = chart.getElementsAtEventForMode(
         e.native,
         "nearest",
-        { intersect: false }, // mudah di HP [web:117]
+        { intersect: false },
         true
       );
 
@@ -107,7 +134,7 @@ function makeTapTooltipPlugin(getCharts) {
         ch.tooltip.setActiveElements(
           [{ datasetIndex: 0, index: idx }],
           { x: (area.left + area.right) / 2, y: area.top + 20 }
-        ); // programmatic tooltip [web:105]
+        );
         ch.update();
       });
     }
@@ -141,12 +168,12 @@ function makeLineChart(canvasId, label, color, tapPlugin) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: "nearest", intersect: false }, // [web:117]
+      interaction: { mode: "nearest", intersect: false },
       plugins: {
         legend: { labels: { color: "#e5e7eb", boxWidth: 10 } },
         tooltip: {
           callbacks: {
-            title: (items) => items?.[0]?.label ?? "", // [web:106]
+            title: (items) => items?.[0]?.label ?? "",
             label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}`
           }
         }
@@ -190,10 +217,10 @@ onValue(realtimeRef, snap => {
   const lux  = Number(val.sensor_cahaya || 0);
   const timeStr = val.waktu || "-";
 
-  cardWind.textContent = wind.toFixed(2);
-  cardRain.textContent = rain.toFixed(2);
-  cardLux.textContent  = lux.toFixed(1);
-  cardTime.textContent = timeStr;
+  if (cardWind) cardWind.textContent = wind.toFixed(2);
+  if (cardRain) cardRain.textContent = rain.toFixed(2);
+  if (cardLux)  cardLux.textContent  = lux.toFixed(1);
+  if (cardTime) cardTime.textContent = timeStr;
   if (statusBanner) statusBanner.textContent = "Connected - Last update: " + timeStr;
 
   pushPoint(chartWindLive, timeStr, wind, 24);
@@ -290,7 +317,7 @@ function buildRekapChart(canvasId, label, color, labels, data, tapPlugin) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: "nearest", intersect: false }, // [web:117]
+      interaction: { mode: "nearest", intersect: false },
       plugins: {
         legend: { labels: { color: "#e5e7eb", boxWidth: 10 } },
         tooltip: {
@@ -321,8 +348,16 @@ function updateRekapView() {
     return;
   }
 
-  const buckets = aggregateData(historiData, currentAgg);
-  rekapInfo.textContent = `Mode: ${currentAgg.toUpperCase()} | Total grup: ${buckets.length}`;
+  const filtered = filterByDateRange(historiData, filterFrom?.value, filterTo?.value);
+  if (!filtered.length) {
+    rekapInfo.textContent = "Tidak ada data pada rentang tanggal ini.";
+    rekapTbody.innerHTML = "";
+    chartWindRekap?.destroy(); chartRainRekap?.destroy(); chartLuxRekap?.destroy();
+    return;
+  }
+
+  const buckets = aggregateData(filtered, currentAgg);
+  rekapInfo.textContent = `Mode: ${currentAgg.toUpperCase()} | Range: ${filterFrom?.value || "-"} s/d ${filterTo?.value || "-"} | Grup: ${buckets.length}`;
 
   // tabel
   rekapTbody.innerHTML = "";
@@ -349,21 +384,38 @@ function updateRekapView() {
   chartLuxRekap  = buildRekapChart("chart-lux-rekap",  "Cahaya (lux)", "#fbbf24", labels, luxData,  tapPluginRekap);
 }
 
-// ===== Download CSV
+// ===== Download CSV (Excel Windows friendly)
 btnDownload?.addEventListener("click", () => {
   if (!historiData.length) return;
-  const buckets = aggregateData(historiData, currentAgg);
 
-  let csv = "Waktu,Wind(km/h),Rain(mm),Lux(lux)\n";
+  const filtered = filterByDateRange(historiData, filterFrom?.value, filterTo?.value);
+  if (!filtered.length) return;
+
+  const buckets = aggregateData(filtered, currentAgg);
+
+  // Excel Windows (ID) umumnya pakai ; sebagai delimiter
+  const sep = ";";
+
+  // "sep=;" membantu Excel pakai delimiter ini
+  let csv = `sep=${sep}\n`;
+  csv += ["Waktu", "Wind(km/h)", "Rain(mm)", "Lux(lux)"].join(sep) + "\n";
+
   buckets.forEach(b => {
-    csv += `${b.label},${b.wind.toFixed(2)},${b.rain.toFixed(2)},${b.lux.toFixed(1)}\n`;
+    csv += [
+      `"${b.label}"`,
+      b.wind.toFixed(2),
+      b.rain.toFixed(2),
+      b.lux.toFixed(1)
+    ].join(sep) + "\n";
   });
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  // BOM untuk UTF-8 di Excel
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
-  a.download = `rekap_${currentAgg}.csv`;
+  a.download = `rekap_${currentAgg}_${filterFrom?.value || "all"}_${filterTo?.value || "all"}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
