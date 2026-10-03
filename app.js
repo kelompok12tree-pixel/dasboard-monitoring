@@ -14,6 +14,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ============================================================
+// PENGATURAN SATUAN
+// ESP32 mengirim angin dalam m/s.
+// Ubah ke "km/h" kalau mau tampil dalam km/h (otomatis x 3.6).
+// ============================================================
+const SATUAN_ANGIN = "m/s";
+const FAKTOR_ANGIN = SATUAN_ANGIN === "km/h" ? 3.6 : 1;
+const LABEL_ANGIN  = `Angin (${SATUAN_ANGIN})`;
+
+// Semua teks satuan angin di HTML (class "unit-wind") ikut berubah
+document.querySelectorAll(".unit-wind").forEach(el => el.textContent = SATUAN_ANGIN);
+
 // DOM
 const tabRealtime = document.getElementById("tab-realtime");
 const tabRecap = document.getElementById("tab-recap");
@@ -76,16 +88,49 @@ btnResetFilter?.addEventListener("click", () => {
   updateRekapView();
 });
 
-// ===== Utils waktu
+// ============================================================
+// UTILS WAKTU
+// Menerima 2 format:
+//   "DD/MM/YYYY HH:MM:SS"  -> format ESP32 sekarang
+//   "YYYY-MM-DD HH:MM:SS"  -> format data lama
+// Data dengan tanggal rusak / tidak masuk akal dibuang.
+// ============================================================
 function parseToDate(str) {
   if (!str || typeof str !== "string") return null;
-  const [dp, tp] = str.split(" ");
-  if (!dp || !tp) return null;
-  const [y, m, d] = dp.split("-").map(Number);
-  const [hh, mm, ss] = tp.split(":").map(Number);
-  return new Date(y, m - 1, d, hh, mm, ss);
+
+  const m = str.trim().match(
+    /^(\d{1,4})[-\/](\d{1,2})[-\/](\d{1,4})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/
+  );
+  if (!m) return null;
+
+  let y, mo, d;
+  if (m[1].length === 4) {          // YYYY-MM-DD
+    y = +m[1]; mo = +m[2]; d = +m[3];
+  } else {                          // DD/MM/YYYY
+    d = +m[1]; mo = +m[2]; y = +m[3];
+  }
+  const hh = +m[4], mm = +m[5], ss = +(m[6] || 0);
+
+  if (hh > 23 || mm > 59 || ss > 59) return null;
+
+  const date = new Date(y, mo - 1, d, hh, mm, ss);
+
+  // Tolak tanggal invalid (NaN, 31 Februari, dll)
+  if (isNaN(date.getTime())) return null;
+  if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) return null;
+
+  // Tolak data sampah dari RTC error: sebelum 2024 atau > 1 hari ke depan
+  if (y < 2024) return null;
+  if (date.getTime() > Date.now() + 24 * 60 * 60 * 1000) return null;
+
+  return date;
 }
+
 function pad2(n) { return n.toString().padStart(2, "0"); }
+
+function formatTanggal(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
 
 // ===== Filter data by date range
 function filterByDateRange(data, fromStr, toStr) {
@@ -201,10 +246,12 @@ function pushPoint(chart, label, value, maxPoints = 24) {
 
 // ===== Init charts
 function initCharts() {
-  chartWindLive = makeLineChart("chart-wind-live", "Angin (km/h)", "#22c55e", tapPluginLive);
+  chartWindLive = makeLineChart("chart-wind-live", LABEL_ANGIN, "#22c55e", tapPluginLive);
   chartRainLive = makeLineChart("chart-rain-live", "Hujan Harian (mm)", "#38bdf8", tapPluginLive);
   chartLuxLive  = makeLineChart("chart-lux-live",  "Cahaya (lux)", "#fbbf24", tapPluginLive);
 }
+
+initCharts();
 
 // ===== Realtime listener
 const realtimeRef = ref(db, "/weather/keadaan_sekarang");
@@ -212,7 +259,7 @@ onValue(realtimeRef, snap => {
   const val = snap.val();
   if (!val) return;
 
-  const wind = Number(val.anemometer || 0);
+  const wind = Number(val.anemometer || 0) * FAKTOR_ANGIN;
   const rain = Number(val.rain_gauge || 0);
   const lux  = Number(val.sensor_cahaya || 0);
   const timeStr = val.waktu || "-";
@@ -233,17 +280,18 @@ const histRef = ref(db, "/weather/histori");
 onValue(histRef, snap => {
   const val = snap.val();
   historiData = [];
+  let dibuang = 0;
 
   if (val) {
     Object.keys(val).forEach(k => {
       const row = val[k];
-      if (!row || !row.waktu) return;
+      if (!row || !row.waktu) { dibuang++; return; }
       const d = parseToDate(row.waktu);
-      if (!d) return;
+      if (!d) { dibuang++; return; }
       historiData.push({
         time: d,
         timeStr: row.waktu,
-        wind: Number(row.anemometer || 0),
+        wind: Number(row.anemometer || 0) * FAKTOR_ANGIN,
         rain: Number(row.rain_gauge || 0),
         lux:  Number(row.sensor_cahaya || 0)
       });
@@ -251,47 +299,73 @@ onValue(histRef, snap => {
     historiData.sort((a, b) => a.time - b.time);
   }
 
+  if (dibuang > 0) {
+    console.warn(`[HISTORI] ${dibuang} data dilewati karena format waktu rusak.`);
+  }
+
   updateRekapView();
 });
 
-// ===== Agregasi histori
+// ============================================================
+// AGREGASI HISTORI
+// Angin & cahaya : rata-rata per kelompok.
+// Hujan          : ESP32 mengirim akumulasi HARIAN (naik terus,
+//                  reset tengah malam), jadi:
+//   - menit / jam / hari : nilai MAKSIMUM (total hujan s/d waktu itu)
+//   - bulan              : JUMLAH total hujan tiap hari dalam bulan itu
+// ============================================================
 function aggregateData(data, mode) {
   const map = new Map();
+  const hujanHarian = new Map();   // "YYYY-MM-DD" -> max hujan hari itu
 
   data.forEach(item => {
     const d = item.time;
     let key, label;
 
     if (mode === "minute") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      key = `${formatTanggal(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
       label = key;
     } else if (mode === "hour") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}`;
+      key = `${formatTanggal(d)} ${pad2(d.getHours())}`;
       label = key + ":00";
     } else if (mode === "day") {
-      key = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      key = formatTanggal(d);
       label = key;
     } else {
-      key = `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+      key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
       label = key;
     }
 
-    if (!map.has(key)) map.set(key, { label, count:0, windSum:0, rainSum:0, luxSum:0 });
+    if (!map.has(key)) map.set(key, { label, count: 0, windSum: 0, luxSum: 0, rainMax: 0 });
     const b = map.get(key);
     b.count++;
     b.windSum += item.wind;
-    b.rainSum += item.rain;
     b.luxSum  += item.lux;
+    if (item.rain > b.rainMax) b.rainMax = item.rain;
+
+    const hariKey = formatTanggal(d);
+    if (!hujanHarian.has(hariKey) || item.rain > hujanHarian.get(hariKey)) {
+      hujanHarian.set(hariKey, item.rain);
+    }
   });
 
-  const buckets = Array.from(map.values()).map(b => ({
-    label: b.label,
-    wind: b.windSum / b.count,
-    rain: b.rainSum / b.count,
-    lux:  b.luxSum  / b.count
-  }));
+  const buckets = Array.from(map.entries()).map(([key, b]) => {
+    let rain = b.rainMax;
+    if (mode === "month") {
+      rain = 0;
+      hujanHarian.forEach((v, hari) => {
+        if (hari.startsWith(key)) rain += v;
+      });
+    }
+    return {
+      label: b.label,
+      wind: b.windSum / b.count,
+      rain,
+      lux:  b.luxSum / b.count
+    };
+  });
 
-  buckets.sort((a,b)=>a.label.localeCompare(b.label));
+  buckets.sort((a, b) => a.label.localeCompare(b.label));
   return buckets;
 }
 
@@ -379,7 +453,7 @@ function updateRekapView() {
 
   chartWindRekap?.destroy(); chartRainRekap?.destroy(); chartLuxRekap?.destroy();
 
-  chartWindRekap = buildRekapChart("chart-wind-rekap", "Angin (km/h)", "#22c55e", labels, windData, tapPluginRekap);
+  chartWindRekap = buildRekapChart("chart-wind-rekap", LABEL_ANGIN, "#22c55e", labels, windData, tapPluginRekap);
   chartRainRekap = buildRekapChart("chart-rain-rekap", "Hujan (mm)", "#38bdf8", labels, rainData, tapPluginRekap);
   chartLuxRekap  = buildRekapChart("chart-lux-rekap",  "Cahaya (lux)", "#fbbf24", labels, luxData,  tapPluginRekap);
 }
@@ -396,9 +470,8 @@ btnDownload?.addEventListener("click", () => {
   // Excel Windows (ID) umumnya pakai ; sebagai delimiter
   const sep = ";";
 
-  // "sep=;" membantu Excel pakai delimiter ini
   let csv = `sep=${sep}\n`;
-  csv += ["Waktu", "Wind(km/h)", "Rain(mm)", "Lux(lux)"].join(sep) + "\n";
+  csv += ["Waktu", `Wind(${SATUAN_ANGIN})`, "Rain(mm)", "Lux(lux)"].join(sep) + "\n";
 
   buckets.forEach(b => {
     csv += [
@@ -421,5 +494,3 @@ btnDownload?.addEventListener("click", () => {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
-
-window.addEventListener("DOMContentLoaded", initCharts);
