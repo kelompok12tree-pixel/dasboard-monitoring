@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script type="module" src="app.js"></script>
 </head>
 
 <body>
@@ -29,10 +29,10 @@
       <div class="cards">
         <div class="card">
           <h3>Kecepatan Angin</h3>
-          <p class="value"><span id="card-wind">-</span> <small>km/h</small></p>
+          <p class="value"><span id="card-wind">-</span> <small class="unit-wind">m/s</small></p>
         </div>
         <div class="card">
-          <h3>Curah Hujan Harian</h3>
+          <h3>Curah Hujan Hari Ini</h3>
           <p class="value"><span id="card-rain">-</span> <small>mm</small></p>
         </div>
         <div class="card">
@@ -41,7 +41,7 @@
         </div>
         <div class="card">
           <h3>Timestamp</h3>
-          <p class="value"><span id="card-time">-</span></p>
+          <p class="value value-time"><span id="card-time">-</span></p>
         </div>
       </div>
 
@@ -49,7 +49,7 @@
 
       <div class="grid-2">
         <div class="panel">
-          <div class="panel-title">Angin (km/h)</div>
+          <div class="panel-title">Angin (<span class="unit-wind">m/s</span>)</div>
           <div class="chart-wrapper small"><canvas id="chart-wind-live"></canvas></div>
         </div>
 
@@ -98,7 +98,7 @@
       <h3 class="subheading">Grafik Historis (terpisah)</h3>
       <div class="grid-2">
         <div class="panel">
-          <div class="panel-title">Angin (km/h)</div>
+          <div class="panel-title">Angin (<span class="unit-wind">m/s</span>)</div>
           <div class="chart-wrapper small"><canvas id="chart-wind-rekap"></canvas></div>
         </div>
 
@@ -118,7 +118,7 @@
           <thead>
             <tr>
               <th>Waktu</th>
-              <th>Angin (km/h)</th>
+              <th>Angin (<span class="unit-wind">m/s</span>)</th>
               <th>Hujan (mm)</th>
               <th>Cahaya (lux)</th>
             </tr>
