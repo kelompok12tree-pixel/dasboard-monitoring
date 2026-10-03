@@ -73,6 +73,7 @@ body{
 .card h3{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:700}
 .value{margin:0;font-size:22px;font-weight:800}
 .value small{font-size:12px;color:var(--muted);font-weight:700}
+.value-time{font-size:16px;word-break:break-word}
 
 .section-title{margin:16px 0 10px;font-size:16px}
 .subheading{margin:12px 0 10px;color:var(--muted);font-weight:700}
@@ -154,4 +155,11 @@ input[type="date"]{
 @media (max-width: 900px){
   .cards{grid-template-columns: repeat(2, minmax(0, 1fr));}
   .grid-2{grid-template-columns: 1fr;}
+}
+
+@media (max-width: 480px){
+  .container{padding:12px}
+  .cards{grid-template-columns: 1fr;}
+  .top-bar h1{font-size:18px}
+  .toolbar{flex-wrap:wrap}
 }
